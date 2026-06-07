@@ -15,8 +15,9 @@ type tabBarang [10000]barang
 type tabTransaksi [10000]transaksi
 type gudang struct {
 	masterBarang tabBarang
-	jumlahDataBarang, jumlahTransaksiIn, jumlahTransaksiOut int
-	transaksiIn, transaksiOut tabTransaksi
+	totalNilaiAset float64
+	jumlahDataBarang, jumlahTransaksi int
+	riwayatTransaksi tabTransaksi
 }
 
 func main() {
@@ -32,18 +33,20 @@ func menu(inventaris *gudang) {
 	fmt.Println("3. Cari Data")
 	fmt.Println("4. Hapus Data")
 	fmt.Println("5. Ubah Data")
-	fmt.Println("6. Urutkan Data (berdasarkan jumlah)")
-	fmt.Println("7. Keluar")
+	fmt.Println("6. Urutkan Data (berdasarkan jumlah stok)")
+	fmt.Println("7. Transaksi masuk")
+	fmt.Println("8. Transaksi keluar")
+	fmt.Println("9. Keluar")
 	fmt.Print("Masukkan pilihan tindakan: ")
 	fmt.Scan(&opsi)
 	fmt.Println()
 	switch opsi {
 		case 1 :
-		inputBarang(&inventaris.masterBarang, &inventaris.transaksiIn, &inventaris.jumlahDataBarang, &inventaris.jumlahTransaksiIn)
+		inputBarang(inventaris, &inventaris.jumlahDataBarang, &inventaris.jumlahTransaksi)
 		case 2 : 
 		tampilkanData(*inventaris)
 		case 3:
-		fmt.Print("Masukkan kode atau nama barang yang akan dicari:")
+		fmt.Print("Masukkan kode atau nama barang yang akan dicari: ")
 		fmt.Scan(&cari)
 		find = cariBarang(inventaris.masterBarang, inventaris.jumlahDataBarang, cari)
 		if find != -1 {
@@ -53,19 +56,16 @@ func menu(inventaris *gudang) {
 			fmt.Println("Data tidak terdapat dalam inventaris")
 		}
 		case 4 :
-		fmt.Print("Masukkan kode atau nama barang yang akan dihapus:")
+		fmt.Print("Masukkan kode atau nama barang yang akan dihapus: ")
 		fmt.Scan(&cari)
 		find = cariBarang(inventaris.masterBarang, inventaris.jumlahDataBarang, cari)
 		if find != -1 {
-			inventaris.transaksiOut[inventaris.jumlahTransaksiOut].keterangan = "Barang " + inventaris.masterBarang[find].nama + " telah dihapus"
-			inventaris.transaksiOut[inventaris.jumlahTransaksiOut].kodeT = inventaris.jumlahTransaksiOut + 1
 			hapusData(&inventaris.masterBarang, find, &inventaris.jumlahDataBarang)
-			inventaris.jumlahTransaksiOut++
 		} else {
 			fmt.Println("Data sudah tidak ada dalam inventaris")
 		}
 		case 5:
-		fmt.Print("Masukkan kode atau nama barang yang akan diubah:")
+		fmt.Print("Masukkan kode atau nama barang yang akan diubah: ")
 		fmt.Scan(&cari)
 		find = cariBarang(inventaris.masterBarang, inventaris.jumlahDataBarang, cari)
 		if find != -1 {
@@ -76,7 +76,7 @@ func menu(inventaris *gudang) {
 		case 6:
 		fmt.Println("1. Menaik (Ascending)")
 		fmt.Println("2. Menurun (Descending)")
-		fmt.Print("Pilih pengurutan yang diinginkan:")
+		fmt.Print("Pilih pengurutan yang diinginkan: ")
 		fmt.Scan(&opsi)
 		switch opsi {
 			case 1:
@@ -86,36 +86,41 @@ func menu(inventaris *gudang) {
 				sortDesc(&inventaris.masterBarang, inventaris.jumlahDataBarang)
 			fmt.Println("Data sukses diurutkan menurun berdasarkan jumlah stok!")
 		}
+		case 7:
+		fmt.Print("Masukkan kode atau nama barang yang masuk: ")
+		fmt.Scan(&cari)
+		find = cariBarang(inventaris.masterBarang, inventaris.jumlahDataBarang, cari)
+		transaksiMasuk(inventaris, find)
+		case 8:
+		fmt.Print("Masukkan kode atau nama barang yang keluar: ")
+		fmt.Scan(&cari)
+		find = cariBarang(inventaris.masterBarang, inventaris.jumlahDataBarang, cari)
+		transaksiKeluar(inventaris, find)
 	}
-	fmt.Println()
-	if opsi != 7 {
+	if opsi > 9 || opsi < 1 {
+		fmt.Println("opsi tidak tersedia")
+		fmt.Println()
+		menu(inventaris)
+	} else if opsi != 9 {
+		fmt.Println()
 		menu(inventaris)
 	}
 }
 
-func inputBarang(A *tabBarang, R *tabTransaksi, n, m *int) {
+func inputBarang(A *gudang, n, m *int) {
 	var i, j int
 	fmt.Print("Masukkan jumlah barang yang ingin di input: ")
 	fmt.Scan(&j)
 	fmt.Println("Silahkan masukkan data")
 	for i = *n; i < (*n + j); i++ {
-		fmt.Scan(&A[i].kode, &A[i].nama, &A[i].nilaiSatuan, &A[i].jumlah)
-		A[i].nilaiTotal = A[i].nilaiSatuan * float64(A[i].jumlah)
-		R[i].kodeT = i+1
-		R[i].keterangan = "Barang " + A[i].nama + " masuk dengan nilai " + fmt.Sprint(A[i].nilaiTotal) + " dalam jumlah " + fmt.Sprint(A[i].jumlah)
+		fmt.Scan(&A.masterBarang[i].kode, &A.masterBarang[i].nama, &A.masterBarang[i].nilaiSatuan, &A.masterBarang[i].jumlah)
+		A.masterBarang[i].nilaiTotal = A.masterBarang[i].nilaiSatuan * float64(A.masterBarang[i].jumlah)
+		A.riwayatTransaksi[i].kodeT = i+1
+		A.riwayatTransaksi[i].keterangan = "Barang " + A.masterBarang[i].nama + " masuk dalam jumlah " + fmt.Sprint(A.masterBarang[i].jumlah)
+		A.totalNilaiAset = A.totalNilaiAset + A.masterBarang[i].nilaiTotal
 	}
 	*m = *m + j
 	*n = *n + j
-	//Memastikan tidak ada 2 baris barang yang sama
-	for i = 0; i < *n; i++ {
-		for j = i+1; j < *n; j++ {
-			if A[i].nama == A[j].nama {
-				A[i].jumlah = A[i].jumlah + A[j].jumlah
-				A[i].nilaiTotal = A[i].nilaiTotal + A[j].nilaiTotal
-				hapusData(A, j, n)
-			}
-		}
-	}
 }
 
 
@@ -128,28 +133,27 @@ func hapusData(A *tabBarang, m int , n *int) {
 }
 
 func tampilkanData(A gudang) {
-	var i, opsi int
+	var i, opsi, minidx int
 	fmt.Println("1. Daftar Barang")
-	fmt.Println("2. Riwayat Transaksi Masuk")
-	fmt.Println("3. Riwayat Transaksi Keluar")
+	fmt.Println("2. Riwayat Transaksi")
 	fmt.Println("Pilih data yang ingin ditampilkan (dalam angka): ")
 	fmt.Scan(&opsi)
 	switch opsi {
 		case 1:
+		minidx = 0
 		fmt.Printf("%-5s %-10s %-2s %-8s %-8s\n", "Kode", "Nama", "Jml", "NilaiSat", "NilaiTot")
 		for i = 0; i < A.jumlahDataBarang; i++ {
-			fmt.Printf("%-5s %-10s %-2d %-8g %-8g\n", A.masterBarang[i].kode, A.masterBarang[i].nama, A.masterBarang[i].jumlah, A.masterBarang[i].nilaiSatuan, A.masterBarang[i].nilaiTotal)
+			if A.masterBarang[minidx].jumlah > A.masterBarang[i].jumlah {
+				minidx = i
+			}
+			fmt.Printf("%-5s %-15s %-2d %-8g %-8g\n", A.masterBarang[i].kode, A.masterBarang[i].nama, A.masterBarang[i].jumlah, A.masterBarang[i].nilaiSatuan, A.masterBarang[i].nilaiTotal)
 		}
 		fmt.Printf("NIlai total aset adalah %.2f\n", hitungTotalAset(A.masterBarang, A.jumlahDataBarang))
+		fmt.Printf("Barang dengan stok terendah adalah %s dengan jumlah %d\n", A.masterBarang[minidx].nama, A.masterBarang[minidx].jumlah)
 		case 2:
 		fmt.Printf("%-5s %-20s\n", "Kode", "Keterangan")
-		for i = 0; i < A.jumlahTransaksiIn; i++ {
-			fmt.Printf("%-5d %-20s\n", A.transaksiIn[i].kodeT, A.transaksiIn[i].keterangan)
-		}
-		case 3:
-		fmt.Printf("%-5s %-20s\n", "Kode", "Keterangan")
-		for i = 0; i < A.jumlahTransaksiOut; i++ {
-			fmt.Printf("%-5d %-20s\n", A.transaksiOut[i].kodeT, A.transaksiOut[i].keterangan)
+		for i = 0; i < A.jumlahTransaksi; i++ {
+			fmt.Printf("%-5d %-20s\n", A.riwayatTransaksi[i].kodeT, A.riwayatTransaksi[i].keterangan)
 		}
 	}
 }
@@ -164,39 +168,56 @@ func hitungTotalAset(A tabBarang, n int) float64 {
 }
 
 func ubahData(A *gudang, n int) {
-	var opsi, temp int
-	fmt.Println("1. Ubah Kode")
-	fmt.Println("2. Ubah Nama")
-	fmt.Println("3. Ubah Nilai Satuan")
-	fmt.Println("4. Ubah Jumlah")
-	fmt.Print("Apa yang ingin diubah:")
+	var opsi int
+	fmt.Println("1. Ubah Nama")
+	fmt.Println("2. Ubah Nilai Satuan")
+	fmt.Println("3. Ubah Jumlah")
+	fmt.Print("Apa yang ingin diubah: ")
 	fmt.Scan(&opsi)
 	fmt.Println("Masukkan perubahan")
 	switch opsi {
 		case 1:
-		fmt.Scan(&A.masterBarang[n].kode)
-		case 2:
 		fmt.Scan(&A.masterBarang[n].nama)
-		case 3:
+		case 2:
 		fmt.Scan(&A.masterBarang[n].nilaiSatuan)
+		A.totalNilaiAset = A.totalNilaiAset - A.masterBarang[n].nilaiTotal
 		A.masterBarang[n].nilaiTotal = A.masterBarang[n].nilaiSatuan * float64(A.masterBarang[n].jumlah)
-		case 4:
-		temp = A.masterBarang[n].jumlah
+		A.totalNilaiAset = A.totalNilaiAset + A.masterBarang[n].nilaiTotal
+		case 3:
 		fmt.Scan(&A.masterBarang[n].jumlah)
+		A.totalNilaiAset = A.totalNilaiAset - A.masterBarang[n].nilaiTotal
 		A.masterBarang[n].nilaiTotal = A.masterBarang[n].nilaiSatuan * float64(A.masterBarang[n].jumlah)
-		if (temp - A.masterBarang[n].jumlah) < 0 {
-			A.transaksiIn[A.jumlahTransaksiIn].kodeT = A.jumlahTransaksiIn+1
-			A.transaksiIn[A.jumlahTransaksiIn].keterangan = "Jumlah " + A.masterBarang[n].nama + " bertambah " + fmt.Sprint(A.masterBarang[n].jumlah - temp) + " dan nilai total bertambah " + fmt.Sprint(float64(A.masterBarang[n].jumlah - temp)*A.masterBarang[n].nilaiSatuan)
-			A.jumlahTransaksiIn++
-		} else if (temp - A.masterBarang[n].jumlah) > 0 {
-			A.transaksiOut[A.jumlahTransaksiOut].kodeT = A.jumlahTransaksiOut+1
-			A.transaksiOut[A.jumlahTransaksiOut].keterangan = "Jumlah " + A.masterBarang[n].nama + " berkurang " + fmt.Sprint(temp - A.masterBarang[n].jumlah) + " dan nilai total berkurang " + fmt.Sprint(float64(temp - A.masterBarang[n].jumlah)*A.masterBarang[n].nilaiSatuan)
-			A.jumlahTransaksiOut++
-		}
+		A.totalNilaiAset = A.totalNilaiAset + A.masterBarang[n].nilaiTotal
 	}
 }
 
-//Salah satunya pake selection, yang satunya pake insertion, lif.
+func transaksiMasuk(A *gudang, n int) {
+	var masuk int
+	fmt.Print("Masukkan jumlah barang masuk: ")
+	fmt.Scan(&masuk)
+	A.masterBarang[n].jumlah = A.masterBarang[n].jumlah + masuk
+	A.masterBarang[n].nilaiTotal = A.masterBarang[n].nilaiSatuan * float64(A.masterBarang[n].jumlah)
+	A.riwayatTransaksi[A.jumlahTransaksi].kodeT = A.jumlahTransaksi + 1
+	A.riwayatTransaksi[A.jumlahTransaksi].keterangan = "Barang " + A.masterBarang[n].nama + " bertambah sebanyak " + fmt.Sprint(masuk) + " dengan nilai " + fmt.Sprint(float64(masuk)*A.masterBarang[n].nilaiSatuan)
+	A.totalNilaiAset = A.totalNilaiAset + (float64(masuk)*A.masterBarang[n].nilaiSatuan)
+	A.jumlahTransaksi++
+}
+func transaksiKeluar(A *gudang, n int) {
+	var keluar int
+	fmt.Print("Masukkan jumlah barang keluar: ")
+	fmt.Scan(&keluar)
+	if A.masterBarang[n].jumlah - keluar >= 0 {
+		A.masterBarang[n].jumlah = A.masterBarang[n].jumlah - keluar 
+		A.masterBarang[n].nilaiTotal = A.masterBarang[n].nilaiSatuan * float64(A.masterBarang[n].jumlah)
+		A.riwayatTransaksi[A.jumlahTransaksi].kodeT = A.jumlahTransaksi + 1
+		A.riwayatTransaksi[A.jumlahTransaksi].keterangan = "Barang " + A.masterBarang[n].nama + " keluar sebanyak " + fmt.Sprint(keluar) + " dengan nilai " + fmt.Sprint(float64(keluar)*A.masterBarang[n].nilaiSatuan)
+		A.totalNilaiAset = A.totalNilaiAset - (float64(keluar)*A.masterBarang[n].nilaiSatuan)
+	} else {
+		fmt.Println("Jumlah data keluar melebihi stok saat ini, anda yakin telah menginput jumlah yang benar?")
+	}
+	A.jumlahTransaksi++
+}
+
 func sortAsc(A *tabBarang, n int) {
 	var i, j, minidx int
 	for i = 0; i < n-1; i++ {
@@ -223,8 +244,6 @@ func sortDesc(A *tabBarang, n int) {
 		A[j+1] = key
 	}
 }
-	
-
 
 func cariBarang(A tabBarang, n int, cari string) int {
 	var i int
