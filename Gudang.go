@@ -48,12 +48,21 @@ func menu(inventaris *gudang) {
 		case 3:
 		fmt.Print("Masukkan kode atau nama barang yang akan dicari: ")
 		fmt.Scan(&cari)
-		find = cariBarang(inventaris.masterBarang, inventaris.jumlahDataBarang, cari)
-		if find != -1 {
-			fmt.Println("Data ditemukan:")
-			fmt.Printf("%-5s %-10s %-2d %-8g %-8g\n", inventaris.masterBarang[find].kode, inventaris.masterBarang[find].nama, inventaris.masterBarang[find].jumlah, inventaris.masterBarang[find].nilaiSatuan, inventaris.masterBarang[find].nilaiTotal)
-		} else {
-			fmt.Println("Data tidak terdapat dalam inventaris")
+		fmt.Println("1. Sequential Search")
+		fmt.Println("2. Binary Search (Hanya jika menggunakan nama barang)")
+		fmt.Print("Pilih metode pencarian: ")
+		fmt.Scan(&opsi)
+		switch opsi {
+			case 1:
+				find = cariBarang(inventaris.masterBarang, inventaris.jumlahDataBarang, cari)
+				if find != -1 {
+					fmt.Println("Data ditemukan:")
+					fmt.Printf("%-5s %-10s %-2d %-8g %-8g\n", inventaris.masterBarang[find].kode, inventaris.masterBarang[find].nama, inventaris.masterBarang[find].jumlah, inventaris.masterBarang[find].nilaiSatuan, inventaris.masterBarang[find].nilaiTotal)
+				} else {
+					fmt.Println("Data tidak terdapat dalam inventaris")
+				}
+			case 2:
+				cariBinary(inventaris.masterBarang, inventaris.jumlahDataBarang, cari)
 		}
 		case 4 :
 		fmt.Print("Masukkan kode atau nama barang yang akan dihapus: ")
@@ -136,7 +145,7 @@ func tampilkanData(A gudang) {
 	var i, opsi, minidx int
 	fmt.Println("1. Daftar Barang")
 	fmt.Println("2. Riwayat Transaksi")
-	fmt.Println("Pilih data yang ingin ditampilkan (dalam angka): ")
+	fmt.Print("Pilih data yang ingin ditampilkan (dalam angka): ")
 	fmt.Scan(&opsi)
 	switch opsi {
 		case 1:
@@ -253,4 +262,47 @@ func cariBarang(A tabBarang, n int, cari string) int {
 		}
 	}
 	return -1
+}
+ func cariBinary(A tabBarang, n int, cari string) {
+	var left, right, mid, found int
+	sortAscNama(&A, n,)
+	found = -1
+	left = 0
+	right =	n-1
+	mid = (left + right) / 2
+	for left <= right && found == -1 {
+		if A[mid].nama < cari {
+			left = mid +1 
+		} else if A[mid].nama > cari {
+			right = mid -1
+		} else { 
+			found = mid
+		}
+		mid = (left + right) / 2
+	}
+	if found != -1 {
+		fmt.Println("Data ditemukan:")
+		fmt.Printf("%-5s %-10s %-2d %-8g %-8g\n", A[found].kode, A[found].nama, A[found].jumlah, A[found].nilaiSatuan, A[found].nilaiTotal)
+	} else {
+		fmt.Println("Data tidak terdapat dalam inventaris")
+	}
+ }
+func sortAscNama(A *tabBarang, n int) {
+	var i, j, minidx int
+	for i = 0; i < n-1; i++ {
+		minidx = i 
+		for j = i + 1; j < n; j++ {
+			if A[j].nama < A[minidx].nama {
+				minidx = j 
+			}
+		}
+		A[i], A[minidx] = A[minidx], A[i]
+	}
+}
+
+func output(A tabBarang, n int) {
+	var i int
+	for i = 0; i < n; i++ {
+		fmt.Println(A[i].nama)
+	}
 }
