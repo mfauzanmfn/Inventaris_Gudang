@@ -120,6 +120,7 @@ func inputBarang(A *gudang, n, m *int) {
 	var i, j int
 	fmt.Print("Masukkan jumlah barang yang ingin di input: ")
 	fmt.Scan(&j)
+	fmt.Println("Contoh format input data: SBK001 Minyak_Goreng 14000.0 5")
 	fmt.Println("Silahkan masukkan data")
 	for i = *n; i < (*n + j); i++ {
 		fmt.Scan(&A.masterBarang[i].kode, &A.masterBarang[i].nama, &A.masterBarang[i].nilaiSatuan, &A.masterBarang[i].jumlah)
