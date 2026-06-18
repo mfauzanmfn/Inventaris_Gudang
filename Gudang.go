@@ -246,14 +246,16 @@ func sortDesc(A *tabBarang, n int) {
 	var key barang
 	for i = 1; i < n; i++ {
 		key = A[i]
-		j = i - 1
-		for j >= 0 && A[j].jumlah < key.jumlah {
-			A[j+1] = A[j]
+		j = i
+		for j > 0 && A[j-1].jumlah < key.jumlah {
+			A[j] = A[j-1]
 			j--
 		}
-		A[j+1] = key
+		A[j] = key
 	}
 }
+
+
 
 func cariBarang(A tabBarang, n int, cari string) int {
 	var i int
